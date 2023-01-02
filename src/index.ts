@@ -6,6 +6,7 @@ import json from 'koa-json';
 import config from './config';
 import tasksRoute from './routes/tasks.route';
 import botsRoute from './routes/bots.route';
+import errorMiddleware from './middlewares/error.middleware';
 
 const { server } = config;
 const app = new Koa();
@@ -13,6 +14,7 @@ const app = new Koa();
 // Middlewares
 app.use(json());
 app.use(logger());
+app.use(errorMiddleware())
 
 // Routes
 const router = new Router({ prefix: `/api/v${server.apiVersion}` });

@@ -1,3 +1,4 @@
+import Joi from "joi";
 import { Response } from "./common";
 
 // Task
@@ -38,3 +39,7 @@ export type GetBotResponseBody = BotResponse | Response<BotResponse>;
 export type PostBotRequestBody = {
   name: string;
 };
+
+export const postBotRequestBodySchema = Joi.object<PostBotRequestBody>({
+  name: Joi.string().required().max(16)
+});
