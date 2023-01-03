@@ -1,7 +1,7 @@
 import { createConnection } from 'mysql2/promise';
-import general from '../config';
+import config from '../config';
 
-const { database } = general;
+const { database } = config;
 
 export const getConnection = async () => await createConnection({
     host: database.host,

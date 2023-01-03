@@ -2,6 +2,7 @@ import joi from 'joi';
 import { Config } from '../../models/config';
 import { database } from './database.config';
 import { server } from './server.config';
+import { redis } from './redis.config';
 
 const envSchema = joi
   .object({
@@ -21,6 +22,7 @@ if (error) {
 export const general: Config = {
   env: envVars.NODE_ENV,
   isDevelopment: envVars.NODE_ENV === 'development',
-  database: database,
-  server: server,
+  database,
+  server,
+  redis
 };

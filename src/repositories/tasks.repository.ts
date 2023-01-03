@@ -4,7 +4,9 @@ import { Task } from '../models/database';
 
 import { getConnection } from './db';
 
-type TasksRepository = Repository<Task>;
+type TasksRepository = Repository<Task> & {
+  complete: (id: number) => Promise<void>;
+};
 
 const create = async (task: Task) => {
   const sql = 'INSERT INTO tasks (description, duration) VALUES (?)';
@@ -80,10 +82,26 @@ const remove = async (id: number) => {
   await conn.query(sql, [id]);
 };
 
+const complete = async (id: number) => {
+  const updateTaskSql = 'UPDATE tasks SET isActive = 0 WHERE id = ?';
+  const updateTaskBotSql = 'UPDATE tasks_bot SET completedAt = CURRENT_TIMESTAMP WHERE taskId = ?';
+
+  const conn = await getConnection();
+  try {
+    conn.beginTransaction();
+    await conn.query(updateTaskSql, [id]);
+    await conn.query(updateTaskBotSql, [id])
+    await conn.commit();
+  } catch (error) {
+    await conn.rollback();
+  }
+};
+
 export default {
   create,
   read,
   readAll,
   update,
   remove,
+  complete
 } as TasksRepository;

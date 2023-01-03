@@ -12,6 +12,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "bullmq": "^3.5.1",
     "dotenv": "^16.0.3",
     "joi": "^17.7.0",
     "koa": "^2.14.1",

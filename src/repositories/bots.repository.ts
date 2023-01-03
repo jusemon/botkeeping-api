@@ -11,7 +11,6 @@ const create = async (bot: Bot) => {
   const selectTasksSql =
     'SELECT * FROM tasks WHERE id NOT IN (SELECT taskId FROM tasks_bot) LIMIT 2;';
   const insertTasksBotSql = 'INSERT INTO tasks_bot (botId, taskId) VALUES ';
-
   const conn = await getConnection();
   try {
     conn.beginTransaction();
@@ -20,41 +19,36 @@ const create = async (bot: Bot) => {
       [bot.name],
     );
 
-    if (insertBotResponse.affectedRows) {
-      const newBot = { ...bot, id: insertBotResponse.insertId } as Bot;
-      const [tasksResponse] = await conn.query<Array<RowDataPacket>>(
-        selectTasksSql,
-      );
-
-      if (tasksResponse.length > 0) {
-        const insertsSql = tasksResponse.map(() => '(?, ?)').join(', ');
-        const [insertTasksForBotResponse] = await conn.query<ResultSetHeader>(
-          insertTasksBotSql + insertsSql,
-          tasksResponse.flatMap((t) => [newBot.id, t.id]),
-        );
-
-        conn.commit();
-
-        if (insertTasksForBotResponse.affectedRows == tasksResponse.length) {
-          return {
-            ...newBot,
-            tasks: tasksResponse.map<Task>((result: any) => {
-              const { queryable: _, ...task } = result;
-              return task;
-            }),
-          };
-        }
-      }
-
-      conn.commit();
-      return newBot;
-    } else {
+    if (!insertBotResponse.affectedRows) {
       throw new Error('Bot not inserted');
     }
+    const [tasksResponse] = await conn.query<Array<RowDataPacket>>(
+      selectTasksSql,
+    );
+
+    if (tasksResponse.length == 0) {
+      throw new Error('No tasks available');
+    }
+
+    const insertedBot = { ...bot, id: insertBotResponse.insertId } as Bot;
+    const insertsSql = tasksResponse.map(() => '(?, ?)').join(', ');
+
+    await conn.query<ResultSetHeader>(
+      insertTasksBotSql + insertsSql,
+      tasksResponse.flatMap((t) => [insertedBot.id, t.id]),
+    );
+
+    insertedBot.tasks = tasksResponse.map<Task>((result: any) => {
+      const { queryable: _, ...task } = result;
+      return task;
+    });
+
+    await conn.commit();
+    return insertedBot;
   } catch (error) {
-    conn.rollback();
+    await conn.rollback();
+    throw error;
   }
-  return null;
 };
 
 const update = async (bot: Bot) => {
@@ -86,9 +80,7 @@ const readAll = async ({ filter, page, pageSize }: FilterRequestParams) => {
 
   const [[{ totalElements }]] = await conn.query<Array<RowDataPacket>>(
     countSelect + where,
-    [
-      ...(filter ? [`%${filter}%`] : []),
-    ],
+    [...(filter ? [`%${filter}%`] : [])],
   );
   const [results] = await conn.query<Array<RowDataPacket>>(
     select + where + pagination,
