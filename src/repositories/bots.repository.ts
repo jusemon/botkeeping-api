@@ -62,18 +62,46 @@ const update = async (bot: Bot) => {
 };
 
 const read = async (id: number) => {
-  const sql = 'SELECT * FROM bots WHERE id = ?';
+  const sql = `
+    SELECT B.*, T.id as taskId, T.description, T.duration, T.isActive
+    FROM bots B
+    INNER JOIN tasks_bot TB on B.id = TB.botId
+    INNER JOIN tasks T on TB.taskId = T.id
+    WHERE B.id = ?
+  `;
   const conn = await getConnection();
-  const [response] = await conn.query<Array<RowDataPacket>>(sql, [id]);
-  const [{ queryable: _, ...result }] = response;
-  return result;
+  const [results] = await conn.query<Array<RowDataPacket>>(sql, [id]);
+  const data = results.reduce<Bot>(
+    (
+      bot,
+      { id, name, createdAt, description, duration, isActive, taskId },
+    ) => ({
+      id,
+      name,
+      createdAt,
+      tasks: [
+        ...(bot?.tasks || []),
+        { id: taskId, description, duration, isActive },
+      ],
+    }),
+    {} as Bot,
+  );
+
+  return data;
 };
 
 const readAll = async ({ filter, page, pageSize }: FilterRequestParams) => {
   const hasPagination = Number.isInteger(pageSize) && Number.isInteger(page);
   const countSelect = 'SELECT COUNT(*) as totalElements FROM bots';
-  const select = 'SELECT * FROM bots';
-  const where = filter ? ' WHERE queryable like ?' : '';
+  const select = `
+    SELECT B.*, T.id as taskId, T.description, T.duration, T.isActive
+    FROM bots B
+    INNER JOIN tasks_bot TB on B.id = TB.botId
+    INNER JOIN tasks T on TB.taskId = T.id
+    WHERE B.id IN
+  `;
+  const subquery = 'SELECT id FROM bots ';
+  const where = filter ? ' WHERE B.queryable like ?' : '';
   const pagination = hasPagination ? ' LIMIT ? OFFSET ?' : '';
 
   const conn = await getConnection();
@@ -83,16 +111,31 @@ const readAll = async ({ filter, page, pageSize }: FilterRequestParams) => {
     [...(filter ? [`%${filter}%`] : [])],
   );
   const [results] = await conn.query<Array<RowDataPacket>>(
-    select + where + pagination,
+    `${select} (${subquery}${where}${pagination})`,
     [
       ...(filter ? [`%${filter}%`] : []),
       ...(hasPagination ? [pageSize!, page! * pageSize!] : []),
     ],
   );
-  const data = results.map<Bot>((result: any) => {
-    const { queryable: _, ...bot } = result;
-    return bot;
-  });
+
+  const data = Object.values(
+    results.reduce<Record<number, Bot>>(
+      (
+        bots,
+        { id, name, createdAt, description, duration, isActive, taskId },
+      ) => ({
+        ...bots,
+        [id]: {
+          ...(bots[id] || { id, name, createdAt }),
+          tasks: [
+            ...(bots[id]?.tasks || []),
+            { id: taskId, description, duration, isActive },
+          ],
+        },
+      }),
+      {},
+    ),
+  );
 
   return {
     data,
