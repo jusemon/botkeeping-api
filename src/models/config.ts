@@ -8,6 +8,7 @@ export type DatabaseConfig = {
 
 export type ServerConfig = {
   port: number;
+  origins: ReadonlyArray<string>;
   apiVersion: number;
 };
 

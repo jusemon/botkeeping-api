@@ -7,6 +7,7 @@ import config from './config';
 import tasksRoute from './routes/tasks.route';
 import botsRoute from './routes/bots.route';
 import errorMiddleware from './middlewares/error.middleware';
+import corsMiddleware from './middlewares/cors.middleware';
 
 const { server } = config;
 
@@ -14,6 +15,7 @@ export const initializeServer = () => {
   const app = new Koa();
 
   // Middlewares
+  app.use(corsMiddleware());
   app.use(json());
   app.use(logger());
   app.use(errorMiddleware());
