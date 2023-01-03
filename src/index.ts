@@ -1,9 +1,9 @@
-import { initializeTaskConsumer } from './consumers/tasks.consumer';
+import { initializeConsumers } from './queues';
 import { initializeServer } from './server';
 
 
 // Consumers
-initializeTaskConsumer();
+initializeConsumers();
 
 // Server
 initializeServer();
