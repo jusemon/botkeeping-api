@@ -2,7 +2,7 @@ import { ResultSetHeader, RowDataPacket } from 'mysql2/promise';
 import { FilterRequestParams, Repository, Response } from '../models/common';
 import { Bot, Task } from '../models/database';
 
-import { getConnection } from './db';
+import { getPool } from './db';
 
 type BotsRepository = Repository<Bot>;
 
@@ -11,7 +11,7 @@ const create = async (bot: Bot) => {
   const selectTasksSql =
     'SELECT * FROM tasks WHERE id NOT IN (SELECT taskId FROM tasks_bot) LIMIT 2;';
   const insertTasksBotSql = 'INSERT INTO tasks_bot (botId, taskId) VALUES ';
-  const conn = await getConnection();
+  const conn = await getPool().getConnection();
   try {
     conn.beginTransaction();
     const [insertBotResponse] = await conn.query<ResultSetHeader>(
@@ -53,7 +53,7 @@ const create = async (bot: Bot) => {
 
 const update = async (bot: Bot) => {
   const sql = 'UPDATE bots SET name = ? WHERE id = ?';
-  const conn = await getConnection();
+  const conn = getPool();
   const [response] = await conn.query<ResultSetHeader>(sql, [bot.name, bot.id]);
   if (response.affectedRows) {
     return { ...bot };
@@ -69,7 +69,7 @@ const read = async (id: number) => {
     INNER JOIN tasks T on TB.taskId = T.id
     WHERE B.id = ?
   `;
-  const conn = await getConnection();
+  const conn = getPool();
   const [results] = await conn.query<Array<RowDataPacket>>(sql, [id]);
   const data = results.reduce<Bot>(
     (
@@ -104,7 +104,7 @@ const readAll = async ({ filter, page, pageSize }: FilterRequestParams) => {
   const where = filter ? ' WHERE B.queryable like ?' : '';
   const pagination = hasPagination ? ' LIMIT ? OFFSET ?' : '';
 
-  const conn = await getConnection();
+  const conn = getPool();
 
   const [[{ totalElements }]] = await conn.query<Array<RowDataPacket>>(
     countSelect + where,
@@ -147,7 +147,7 @@ const readAll = async ({ filter, page, pageSize }: FilterRequestParams) => {
 
 const remove = async (id: number) => {
   const sql = 'DELETE FROM bots WHERE id = ?';
-  const conn = await getConnection();
+  const conn = getPool();
 
   await conn.query(sql, [id]);
 };

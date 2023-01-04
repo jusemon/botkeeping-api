@@ -1,15 +1,20 @@
-import { createConnection } from 'mysql2/promise';
+import { createPool, Pool } from 'mysql2/promise';
 import config from '../config';
-
 const { database } = config;
+let globalPool: Pool | undefined = undefined;
 
-export const getConnection = async () => await createConnection({
+export const getPool = () => {
+  if (globalPool) {
+    return globalPool;
+  }
+
+  globalPool = createPool({
     host: database.host,
     database: database.name,
     user: database.user,
     password: database.password,
     port: database.port,
-    typeCast: function castField (field, defaultTypeCasting) {
+    typeCast: function castField(field, defaultTypeCasting) {
       if (field.type === 'BIT' && field.length === 1) {
         const bytes = field.buffer();
         return bytes[0] === 1;
@@ -17,12 +22,5 @@ export const getConnection = async () => await createConnection({
       return defaultTypeCasting();
     },
   });
-
-// export const query = async (
-//   sql: string,
-//   params: Array<string | number | Date | boolean>
-// ) => {
-//   const connection = 
-//   const [results] = await connection.query(sql, params);
-//   return results;
-// };
+  return globalPool;
+};

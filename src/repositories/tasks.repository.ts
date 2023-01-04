@@ -2,7 +2,7 @@ import { ResultSetHeader, RowDataPacket } from 'mysql2/promise';
 import { FilterRequestParams, Repository, Response } from '../models/common';
 import { Task } from '../models/database';
 
-import { getConnection } from './db';
+import { getPool } from './db';
 
 type TasksRepository = Repository<Task> & {
   complete: (id: number) => Promise<void>;
@@ -10,7 +10,7 @@ type TasksRepository = Repository<Task> & {
 
 const create = async (task: Task) => {
   const sql = 'INSERT INTO tasks (description, duration) VALUES (?)';
-  const conn = await getConnection();
+  const conn = getPool();
   const [response] = await conn.query<ResultSetHeader>(sql, [task.description, task.duration]);
   if (response.affectedRows) {
     return { ...task, id: response.insertId };
@@ -20,7 +20,7 @@ const create = async (task: Task) => {
 
 const update = async (task: Task) => {
   const sql = 'UPDATE tasks SET description = ?, duration = ? WHERE id = ?';
-  const conn = await getConnection();
+  const conn = getPool();
   const [response] = await conn.query<ResultSetHeader>(sql, [
     task.description,
     task.duration,
@@ -34,7 +34,7 @@ const update = async (task: Task) => {
 
 const read = async (id: number) => {
   const sql = 'SELECT * FROM tasks WHERE id = ?';
-  const conn = await getConnection();
+  const conn = getPool();
   const [response] = await conn.query<Array<RowDataPacket>>(sql, [id]);
   const [{ queryable: _, ...result }] = response;
   return result;
@@ -47,7 +47,7 @@ const readAll = async({ filter, page, pageSize }: FilterRequestParams) => {
   const where = filter ? ' WHERE queryable like ?' : '';
   const pagination = hasPagination ? ' LIMIT ? OFFSET ?' : '';
 
-  const conn = await getConnection();
+  const conn = getPool();
 
   const [[{ totalElements }]] = await conn.query<Array<RowDataPacket>>(
     countSelect + where,
@@ -77,7 +77,7 @@ const readAll = async({ filter, page, pageSize }: FilterRequestParams) => {
 
 const remove = async (id: number) => {
   const sql = 'DELETE FROM tasks WHERE id = ?';
-  const conn = await getConnection();
+  const conn = getPool();
 
   await conn.query(sql, [id]);
 };
@@ -86,7 +86,7 @@ const complete = async (id: number) => {
   const updateTaskSql = 'UPDATE tasks SET isActive = 0 WHERE id = ?';
   const updateTaskBotSql = 'UPDATE tasks_bot SET completedAt = CURRENT_TIMESTAMP WHERE taskId = ?';
 
-  const conn = await getConnection();
+  const conn = await getPool().getConnection();
   try {
     conn.beginTransaction();
     await conn.query(updateTaskSql, [id]);
