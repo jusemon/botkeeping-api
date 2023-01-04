@@ -14,6 +14,7 @@ export const getPool = () => {
     user: database.user,
     password: database.password,
     port: database.port,
+    timezone: 'Z',
     typeCast: function castField(field, defaultTypeCasting) {
       if (field.type === 'BIT' && field.length === 1) {
         const bytes = field.buffer();
