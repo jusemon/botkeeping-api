@@ -24,6 +24,7 @@ export type TaskBotResponse = {
   id: number;
   description: string;
   duration: number;
+  isActive: boolean;
   completedAt?: Date;
 };
 

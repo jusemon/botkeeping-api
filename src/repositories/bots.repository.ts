@@ -63,7 +63,7 @@ const update = async (bot: Bot) => {
 
 const read = async (id: number) => {
   const sql = `
-    SELECT B.*, T.id as taskId, T.description, T.duration, T.isActive
+    SELECT B.*, T.id as taskId, T.description, T.duration, T.isActive, TB.completedAt
     FROM bots B
     INNER JOIN tasks_bot TB on B.id = TB.botId
     INNER JOIN tasks T on TB.taskId = T.id
@@ -74,14 +74,14 @@ const read = async (id: number) => {
   const data = results.reduce<Bot>(
     (
       bot,
-      { id, name, createdAt, description, duration, isActive, taskId },
+      { id, name, createdAt, description, duration, isActive, taskId, completedAt },
     ) => ({
       id,
       name,
       createdAt,
       tasks: [
         ...(bot?.tasks || []),
-        { id: taskId, description, duration, isActive },
+        { id: taskId, description, duration, isActive, completedAt },
       ],
     }),
     {} as Bot,
@@ -94,7 +94,7 @@ const readAll = async ({ filter, page, pageSize }: FilterRequestParams) => {
   const hasPagination = Number.isInteger(pageSize) && Number.isInteger(page);
   const countSelect = 'SELECT COUNT(*) as totalElements FROM bots';
   const select = `
-    SELECT B.*, T.id as taskId, T.description, T.duration, T.isActive
+    SELECT B.*, T.id as taskId, T.description, T.duration, T.isActive, TB.completedAt
     FROM bots B
     INNER JOIN tasks_bot TB on B.id = TB.botId
     INNER JOIN tasks T on TB.taskId = T.id
@@ -111,7 +111,7 @@ const readAll = async ({ filter, page, pageSize }: FilterRequestParams) => {
     [...(filter ? [`%${filter}%`] : [])],
   );
   const [results] = await conn.query<Array<RowDataPacket>>(
-    `${select} (${subquery}${where}${pagination})`,
+    `${select} (SELECT * FROM (${subquery}${where}${pagination}) as sub)`,
     [
       ...(filter ? [`%${filter}%`] : []),
       ...(hasPagination ? [pageSize!, page! * pageSize!] : []),
@@ -122,14 +122,14 @@ const readAll = async ({ filter, page, pageSize }: FilterRequestParams) => {
     results.reduce<Record<number, Bot>>(
       (
         bots,
-        { id, name, createdAt, description, duration, isActive, taskId },
+        { id, name, createdAt, description, duration, isActive, taskId, completedAt },
       ) => ({
         ...bots,
         [id]: {
           ...(bots[id] || { id, name, createdAt }),
           tasks: [
             ...(bots[id]?.tasks || []),
-            { id: taskId, description, duration, isActive },
+            { id: taskId, description, duration, isActive, completedAt },
           ],
         },
       }),
