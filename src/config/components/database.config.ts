@@ -21,7 +21,7 @@ if (error) {
 }
 
 if (envVars.DB_PASSWORD__FILE) {
-  envVars.DB_PASSWORD = readFileSync(envVars.DB_PASSWORD__FILE, 'utf8');
+  envVars.DB_PASSWORD = readFileSync(envVars.DB_PASSWORD__FILE, 'utf8').trim();
 }
 
 export const database: DatabaseConfig = {
