@@ -29,11 +29,8 @@ const remove = async (id: number) => {
 };
 
 const complete = async (task: Task) => {
-  const startTime = Date.now();
+  await time.sleep(task.duration);
   await tasksRepository.complete(task.id);
-  const timeDiff = Date.now() - startTime;
-  const duration = timeDiff < task.duration ? task.duration - timeDiff : 0;
-  await time.sleep(duration);
 };
 
 export default {
@@ -42,5 +39,5 @@ export default {
   readAll,
   update,
   remove,
-  complete
+  complete,
 } as TasksService;
