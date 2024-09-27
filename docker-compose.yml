@@ -1,0 +1,26 @@
+name: botkeeping
+
+services:
+  api:
+    build:
+      context: .
+    ports:
+      - ${PORT}:${PORT}
+    environment:
+      NODE_ENV: ${NODE_ENV}
+      HOST: ${HOST}
+      PORT: ${PORT}
+      API_VERSION: ${API_VERSION}
+      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS}
+      DB_HOST: ${DB_HOST}
+      DB_DATABASE: ${DB_DATABASE}
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+      DB_PORT: ${DB_PORT}
+      REDIS_HOST: ${REDIS_HOST}
+      REDIS_PORT: ${REDIS_PORT}
+
+networks:
+  default:
+    name: default-network
+    external: true
