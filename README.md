@@ -1,4 +1,4 @@
-# Avatars API
+# Botkeeping API
 
 ## Requirements
 
