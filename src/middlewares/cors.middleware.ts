@@ -7,13 +7,14 @@ import config from '../config';
 const { server } = config;
 
 const origin = (ctx: Context) => {
-  const [defaulOrigin] = server.origins;
-  if (ctx.headers.origin && server.origins.includes(ctx.headers.origin)) {
-    return ctx.header.origin || defaulOrigin;
+  const [defaultOrigin] = server.origins;
+  if (ctx.headers.origin && server.origins.indexOf(ctx.headers.origin) > -1) {
+    return ctx.header.origin || defaultOrigin;
   }
-  return defaulOrigin;
+  return defaultOrigin;
 };
 
-const corsMiddleware: () => Router.IMiddleware<any, {}> = () => cors({ origin });
+const corsMiddleware: () => Router.IMiddleware<any, {}> = () =>
+  cors({ origin });
 
 export default corsMiddleware;

@@ -1,3 +1,4 @@
+import { NetworkInterfaceInfo, networkInterfaces } from 'os';
 import Koa from 'koa';
 import Router from 'koa-router';
 import logger from 'koa-logger';
@@ -10,6 +11,25 @@ import errorMiddleware from './middlewares/error.middleware';
 import corsMiddleware from './middlewares/cors.middleware';
 
 const { server } = config;
+
+const startServerLog = (port: number) => async () => {
+  const net = Object.values(networkInterfaces())
+    .flat()
+    .filter((v) => v?.family === 'IPv4')
+    .sort((v) => (v!.internal ? -1 : 1)) as Array<NetworkInterfaceInfo>;
+
+  console.info('Server started successfully!');
+  console.info('You can now use the service.');
+
+  net.forEach(({ internal, address }) =>
+    console.info(
+      `\t${(internal ? 'Local:' : 'On Your Network:').padEnd(
+        20,
+        ' ',
+      )}http://${address}:${port}`,
+    ),
+  );
+};
 
 export const initializeServer = () => {
   const app = new Koa();
@@ -25,7 +45,5 @@ export const initializeServer = () => {
   router.use(tasksRoute.routes()).use(botsRoute.routes());
   app.use(router.routes()).use(router.allowedMethods());
 
-  app.listen(server.port, () => {
-    console.log(`Server started at port ${server.port}`);
-  });
+  app.listen(server.port, server.host, startServerLog(server.port));
 };

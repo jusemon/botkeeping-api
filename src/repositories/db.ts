@@ -17,7 +17,7 @@ export const getPool = () => {
     timezone: 'Z',
     typeCast: function castField(field, defaultTypeCasting) {
       if (field.type === 'BIT' && field.length === 1) {
-        const bytes = field.buffer();
+        const bytes = field.buffer() as Buffer;
         return bytes[0] === 1;
       }
       return defaultTypeCasting();
